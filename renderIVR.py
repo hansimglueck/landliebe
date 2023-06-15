@@ -133,8 +133,8 @@ same => n,Goto(it-1.2,s,1)
 import os
 import fnmatch
 
-debug = 0;
-convert = 0;
+debug = 0
+convert = 0
 
 def writeMenuDialplan(f, dirpath):
     f.write("[" + dirpath + "]\n")
