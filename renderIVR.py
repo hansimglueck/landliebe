@@ -133,8 +133,8 @@ same => n,Goto(it-1.2,s,1)
 import os
 import fnmatch
 
-debug = 0
-convert = 0
+debug = 1
+convert = 1
 
 def writeMenuDialplan(f, dirpath):
     f.write("[" + dirpath + "]\n")
@@ -192,18 +192,23 @@ def writeMenuDialplan(f, dirpath):
     f.write('\n')
 
     #write hangup-handler
-    f.write('[hangup-handler]\n')
-    f.write('exten => s,1,System(pkill python)\n')
-    f.write('same => n,System(pidof mpg123 | xargs kill -9)\n')
-    f.write('\n')
+    # f.write('[hangup-handler]\n')
+    # f.write('exten => s,1,System(pkill python)\n')
+    # f.write('same => n,System(pidof mpg123 | xargs kill -9)\n')
+    # f.write('\n')
 
 
 def writeAudioDialplan(f, dirpath, filename):
-    # convert mp3-file and move to asterisk-folder
-    os.system('echo "sox ' + dirpath + '/' + filename + ' -r 8000 -c1 /var/lib/asterisk/sounds/zelle/' + os.path.splitext(filename)[0] + '.gsm"')
-    if (convert):
-        os.system('sox ' + dirpath + '/' + filename + ' -r 8000 -c1 /var/lib/asterisk/sounds/zelle/' + os.path.splitext(filename)[0] + '.gsm')
-    os.system('cp ' + dirpath + '/' + filename + ' /var/lib/asterisk/sounds/zelle/' + filename)
+    # convert mp3-file and move to asterisk-folder to play it back in background-app
+    # also copy mp3-file to play back on jack
+    # check wheter the file '/var/lib/asterisk/sounds/zelle/' + os.path.splitext(filename)[0] + '.gsm' does exist
+    # if not, convert it
+    if (not os.path.isfile('/var/lib/asterisk/sounds/zelle/' + os.path.splitext(filename)[0] + '.gsm')):
+        if (debug):
+            os.system('echo "sox ' + dirpath + '/' + filename + ' -r 8000 -c1 /var/lib/asterisk/sounds/zelle/' + os.path.splitext(filename)[0] + '.gsm"')
+        if (convert):
+            os.system('sox ' + dirpath + '/' + filename + ' -r 8000 -c1 /var/lib/asterisk/sounds/zelle/' + os.path.splitext(filename)[0] + '.gsm')
+        os.system('cp ' + dirpath + '/' + filename + ' /var/lib/asterisk/sounds/zelle/' + filename)
 
     # generate dialplan for audio
 
@@ -211,9 +216,9 @@ def writeAudioDialplan(f, dirpath, filename):
     # write start extension
     f.write("exten => s,1,Answer(500)\n")
     f.write('same => n(start),agi(picotts.agi, "Viel Spass beim Hören. Zum Abbrechen bitte die Raute-Taste drücken.", de-DE, any)\n')
-    # TODO: different way to kill the fadeIn-script then kill all python...
-    f.write('same => n,System(pkill python)\n')
-    f.write('same => n,System(python /home/pi/zelle/python/fadeInSound.py &)\n')
+    # TODO: different way to kill the fadeIn-script then kill all python... (it is not even working!!)
+    # f.write('same => n,System(pkill python)\n')
+    f.write('same => n,System(python /home/pi/zelle/fadeInSound.py &)\n')
     f.write('same => n,System(pidof mpg123 | xargs kill -9)\n')    
     f.write('same => n,System(mpg123 /var/lib/asterisk/sounds/zelle/' + filename + ' &)\n')
     f.write('same => n,Background(/var/lib/asterisk/sounds/zelle/' + os.path.splitext(filename)[0] + ', m)\n')
@@ -232,7 +237,7 @@ def writeAudioDialplan(f, dirpath, filename):
 f = open('extensions_zelle.conf', 'w')
 
 # access the import-directory
-for dirpath, dirnames, files in os.walk('../menu'):
+for dirpath, dirnames, files in os.walk('menu'):
     print(f'Found directory: {dirpath}')
     writeMenuDialplan(f, dirpath)
     for filename in files:
